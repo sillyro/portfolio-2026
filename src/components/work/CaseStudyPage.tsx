@@ -4,7 +4,6 @@ import { MDXContent } from "@content-collections/mdx/react";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { projectMdxComponents } from "@/components/mdx";
 import { LazyViewportVideo } from "@/components/media/LazyViewportVideo";
-import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 
 export type Spec = { label: string; value: string };
@@ -48,27 +47,33 @@ export function CaseStudyPage({ study }: Props) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Header />
+      <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-[2px]">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-6 py-3 md:px-10">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground transition hover:text-[var(--signal)]"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Index
+          </Link>
+          <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:inline">
+            {study.year}
+          </span>
+        </div>
+      </header>
       <main>
         {/* Hero */}
         <section className="relative overflow-hidden border-b border-border">
-          <div className="bg-blueprint-grid absolute inset-0 opacity-70" aria-hidden="true" />
-          <div className="bg-grain pointer-events-none absolute inset-0" aria-hidden="true" />
+          <div className="pointer-events-none absolute inset-0 bg-cutting-mat opacity-[0.35]" aria-hidden="true" />
 
-          <div className="relative mx-auto max-w-[1400px] px-6 pb-16 pt-20 md:px-10 md:pb-24 md:pt-28">
-            <div className="mb-10 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground md:mb-16">
-              <Link to="/" className="inline-flex items-center gap-2 hover:text-foreground">
-                <ArrowLeft className="h-3.5 w-3.5" />
-                Index
-              </Link>
-              <span>Case · {study.index}</span>
-              <span>{study.year}</span>
+          <div className="relative mx-auto max-w-[1400px] px-6 pb-16 pt-12 md:px-10 md:pb-24 md:pt-16">
+            <div className="mb-8 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground md:mb-10">
+              <span className="text-foreground/70">{study.client}</span>
+              <span className="mx-2 text-border">/</span>
+              <span>Case {study.index}</span>
             </div>
 
-            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-              {study.client}
-            </div>
-            <h1 className="mt-4 max-w-5xl font-display text-4xl font-light leading-[1.05] tracking-tight md:text-7xl">
+            <h1 className="mt-2 max-w-5xl font-display text-4xl font-light leading-[1.05] tracking-tight md:text-7xl">
               {study.title}
             </h1>
 
@@ -80,9 +85,9 @@ export function CaseStudyPage({ study }: Props) {
                 height={1080}
                 className="h-full w-full object-cover"
               />
-              <div className="pointer-events-none absolute inset-4 border border-foreground/10" />
-              <div className="pointer-events-none absolute left-4 top-4 font-mono text-[10px] uppercase tracking-[0.22em] text-background mix-blend-difference">
-                ↳ Cover · {study.index}
+              <div className="pointer-events-none absolute inset-4 border border-[color-mix(in_oklab,var(--foreground)_10%,transparent)]" />
+              <div className="pointer-events-none absolute left-4 top-4 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                Cover · {study.index}
               </div>
             </div>
           </div>

@@ -29,6 +29,12 @@ const projects = defineCollection({
     content: z.string(),
     slug: z.string(),
     index: z.string(),
+    category: z.enum(["product", "branding", "side-quest"]),
+    featured: z.boolean(),
+    /** Optional hero loop for cards / meta (public path to `.mp4`). */
+    videoUrl: z.string().optional(),
+    /** Optional still override when no video is used. */
+    thumbnail: z.string().optional(),
     client: z.string(),
     title: z.string(),
     year: z.string(),
