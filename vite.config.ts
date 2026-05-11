@@ -46,18 +46,19 @@ export default defineConfig({
   plugins: [contentCollections(), ...(useVercelNitro ? [nitro()] : [])],
   vite: {
     publicDir: resolvePublicDir(),
+    // TanStack’s server packages use Vite-only `#…` import specifiers; keep them bundled in SSR output.
+    ssr: {
+      noExternal: [/^@tanstack\//],
+    },
     // Preset lives on Vite’s `nitro` key (read by the Nitro plugin), not on `nitro()`’s argument.
-    // SSR entry is required for Nitro + TanStack Start on Vercel; without it the deploy only serves a static HTML shell.
     ...(useVercelNitro
       ? {
-          nitro: { preset: "vercel" },
-          environments: {
-            ssr: {
-              build: {
-                rollupOptions: {
-                  input: "./server.ts",
-                },
-              },
+          nitro: {
+            preset: "vercel",
+            // With an `index.html` renderer template, Nitro skips auto-injection of the Vite SSR
+            // bridge; without this, HTML never reaches TanStack and you get a static shell only.
+            renderer: {
+              entry: path.join(process.cwd(), "src/nitro-ssr-bridge.ts"),
             },
           },
         }
