@@ -47,6 +47,20 @@ export default defineConfig({
   vite: {
     publicDir: resolvePublicDir(),
     // Preset lives on Vite’s `nitro` key (read by the Nitro plugin), not on `nitro()`’s argument.
-    ...(useVercelNitro ? { nitro: { preset: "vercel" } } : {}),
+    // SSR entry is required for Nitro + TanStack Start on Vercel; without it the deploy only serves a static HTML shell.
+    ...(useVercelNitro
+      ? {
+          nitro: { preset: "vercel" },
+          environments: {
+            ssr: {
+              build: {
+                rollupOptions: {
+                  input: "./server.ts",
+                },
+              },
+            },
+          },
+        }
+      : {}),
   },
 });
