@@ -15,6 +15,7 @@ dist-ssr
 .tanstack/**
 .content-collections
 .nitro
+.vercel
 *.local
 
 # Wrangler / Cloudflare

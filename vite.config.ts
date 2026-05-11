@@ -11,6 +11,17 @@ import fs from "node:fs";
 import path from "node:path";
 import contentCollections from "@content-collections/vite";
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { nitro } from "nitro/vite";
+
+/**
+ * Nitro (Vercel preset) must run instead of the Cloudflare plugin for deploys to Vercel.
+ * - `VERCEL=1` is set on Vercel only if "System Environment Variables" is enabled for the project.
+ * - `USE_VERCEL_NITRO=1` is set by `vercel.json` buildCommand so local `vercel build` and all deploys work regardless.
+ */
+const useVercelNitro =
+  process.env.USE_VERCEL_NITRO === "1" ||
+  process.env.USE_VERCEL_NITRO === "true" ||
+  process.env.VERCEL === "1";
 
 function resolvePublicDir(): string {
   const root = process.cwd();
@@ -30,8 +41,12 @@ function resolvePublicDir(): string {
 }
 
 export default defineConfig({
-  plugins: [contentCollections()],
+  // Lovable config injects @cloudflare/vite-plugin on `vite build` by default; that output is for Workers, not Vercel.
+  cloudflare: useVercelNitro ? false : undefined,
+  plugins: [contentCollections(), ...(useVercelNitro ? [nitro()] : [])],
   vite: {
     publicDir: resolvePublicDir(),
+    // Preset lives on Vite’s `nitro` key (read by the Nitro plugin), not on `nitro()`’s argument.
+    ...(useVercelNitro ? { nitro: { preset: "vercel" } } : {}),
   },
 });
