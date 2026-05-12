@@ -43,6 +43,12 @@ function normalizeSpecLabel(label: string) {
   return label.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
+/** Spec rows whose values read as compact tokens (toolchains, dates); allow horizontal scroll vs wrapping. */
+function specValueUsesNowrap(label: string): boolean {
+  const n = normalizeSpecLabel(label);
+  return ["tools", "timeline", "status", "category", "methodology", "role"].includes(n);
+}
+
 function isProjectLinkLabel(label: string): boolean {
   return normalizeSpecLabel(label) === "project link";
 }
@@ -81,7 +87,7 @@ function SpecTableRow({ spec }: { spec: Spec }) {
 
   return (
     <div className="flex gap-4 px-5 py-4">
-      <dt className="w-32 shrink-0 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+      <dt className="w-44 shrink-0 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground md:w-52">
         {spec.label}
       </dt>
       <dd
@@ -95,7 +101,16 @@ function SpecTableRow({ spec }: { spec: Spec }) {
         {showSmartButton ? (
           <SpecSmartLink href={url}>[ VISIT SITE ↗ ]</SpecSmartLink>
         ) : (
-          <span className={cn("block break-words leading-snug")}>{spec.value}</span>
+          <span
+            className={cn(
+              "block leading-snug",
+              specValueUsesNowrap(spec.label)
+                ? "whitespace-nowrap overflow-x-auto [scrollbar-width:thin]"
+                : "break-words",
+            )}
+          >
+            {spec.value}
+          </span>
         )}
       </dd>
     </div>
@@ -122,38 +137,53 @@ type Props = { study: CaseStudy };
 
 export function CaseStudyPage({ study }: Props) {
   const nextProject = useMemo(() => getNextProjectBySlug(allProjects, study.slug), [study.slug]);
+  const archiveProject = useMemo(() => allProjects.find((p) => p.slug === study.slug), [study.slug]);
+  const projectCode = archiveProject ? formatProjectCode(archiveProject) : study.index;
 
   const heroVideo =
     study.videoUrl?.trim() && isRenderableVideoSrc(study.videoUrl) ? study.videoUrl.trim() : null;
 
   return (
     <div className="min-h-full bg-background text-foreground">
-      <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-[2px]">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-6 py-3 md:px-10">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-[var(--signal)]"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Index
-          </Link>
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-4 sm:gap-6">
-            <span className="hidden shrink-0 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:inline">
-              {study.year}
+      <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur-[6px]">
+        <div className="mx-auto max-w-[1400px] px-6 md:px-10">
+          <div className="flex items-center justify-between gap-4 py-3">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-[var(--signal)]"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Index
+            </Link>
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-4 sm:gap-6">
+              <span className="hidden shrink-0 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:inline">
+                {study.year}
+              </span>
+              {nextProject ? (
+                <Link
+                  to="/work/$slug"
+                  params={{ slug: nextProject.slug }}
+                  className="group inline-flex max-w-[min(56vw,20rem)] items-center gap-1.5 text-right font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:text-[var(--signal)] md:max-w-none"
+                >
+                  <span className="shrink-0">Next Project</span>
+                  <span className="text-foreground/35 transition-colors group-hover:text-[var(--signal)]">→</span>
+                  <span className="min-w-0 truncate text-foreground/80 transition-colors group-hover:text-[var(--signal)]">
+                    {formatProjectCode(nextProject)} / {nextProject.client}
+                  </span>
+                </Link>
+              ) : null}
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-4 border-t border-border py-2.5">
+            <span className="min-w-0 truncate font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              <span className="text-foreground/85">{projectCode}</span>
+              <span className="text-border"> · </span>
+              <span className="text-foreground/70">{study.client}</span>
             </span>
-            {nextProject ? (
-              <Link
-                to="/work/$slug"
-                params={{ slug: nextProject.slug }}
-                className="group inline-flex max-w-[min(56vw,20rem)] items-center gap-1.5 text-right font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:text-[var(--signal)] md:max-w-none"
-              >
-                <span className="shrink-0">Next Project</span>
-                <span className="text-foreground/35 transition-colors group-hover:text-[var(--signal)]">→</span>
-                <span className="min-w-0 truncate text-foreground/80 transition-colors group-hover:text-[var(--signal)]">
-                  {formatProjectCode(nextProject)} / {nextProject.client}
-                </span>
-              </Link>
-            ) : null}
+            <span className="inline-flex shrink-0 items-center gap-1 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/45">
+              Case study
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+            </span>
           </div>
         </div>
       </header>
@@ -162,14 +192,8 @@ export function CaseStudyPage({ study }: Props) {
         <section className="relative overflow-hidden border-b border-border">
           <div className="pointer-events-none absolute inset-0 bg-cutting-mat opacity-[0.35]" aria-hidden="true" />
 
-          <div className="relative mx-auto max-w-[1400px] px-6 pb-16 pt-12 md:px-10 md:pb-24 md:pt-16">
-            <div className="mb-8 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground md:mb-10">
-              <span className="text-foreground/70">{study.client}</span>
-              <span className="mx-2 text-border">/</span>
-              <span>Case {study.index}</span>
-            </div>
-
-            <h1 className="mt-2 max-w-5xl font-display text-4xl font-light leading-[1.05] tracking-tight md:text-7xl">
+          <div className="relative mx-auto max-w-[1400px] px-6 pb-16 pt-10 md:px-10 md:pb-24 md:pt-12">
+            <h1 className="mt-0 max-w-5xl font-display text-4xl font-light leading-[1.05] tracking-tight md:text-7xl">
               {study.title}
             </h1>
             <p className="mt-3 max-w-5xl font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -178,9 +202,23 @@ export function CaseStudyPage({ study }: Props) {
               {study.year}
             </p>
 
-            <div className="relative mt-12 overflow-hidden border border-border bg-muted md:mt-16">
+            <div className="relative mt-12 overflow-hidden border border-border md:mt-16">
+              {/* Letterbox: matte stone + soft wash from cover (image only); video uses matte only */}
+              <div
+                className="absolute inset-0 bg-[color-mix(in_oklab,var(--muted)_38%,var(--background)_62%)]"
+                aria-hidden
+              />
+              {!heroVideo ? (
+                <img
+                  src={study.cover}
+                  alt=""
+                  className="pointer-events-none absolute inset-0 h-full w-full scale-[1.15] object-cover opacity-[0.2] blur-3xl saturate-[1.05]"
+                  aria-hidden
+                />
+              ) : null}
+
               {heroVideo ? (
-                <div className="flex min-h-[12rem] items-center justify-center p-4 md:min-h-[16rem] md:p-8">
+                <div className="relative z-10 flex min-h-[12rem] items-center justify-center bg-[color-mix(in_oklab,var(--muted)_22%,transparent)] p-4 md:min-h-[16rem] md:p-8">
                   <LazyViewportVideo
                     src={heroVideo}
                     loop
@@ -193,13 +231,13 @@ export function CaseStudyPage({ study }: Props) {
                   />
                 </div>
               ) : (
-                <div className="flex max-h-[80vh] min-h-[12rem] items-center justify-center p-4 md:p-8">
+                <div className="relative z-10 flex min-h-[min(70vh,28rem)] items-center justify-center p-4 md:p-10">
                   <img
                     src={study.cover}
                     alt={study.client}
                     width={1920}
                     height={1080}
-                    className="max-h-[80vh] w-auto max-w-full object-contain"
+                    className="max-h-[80vh] w-auto max-w-full object-contain shadow-[0_12px_48px_-12px_color-mix(in_oklab,var(--ink)_18%,transparent)]"
                   />
                 </div>
               )}
@@ -214,9 +252,9 @@ export function CaseStudyPage({ study }: Props) {
         {/* Specs + Brief */}
         <section className="border-b border-border">
           <div className="mx-auto grid max-w-[1400px] gap-12 px-6 py-16 md:grid-cols-12 md:gap-10 md:px-10 md:py-24">
-            {/* System Specs sidebar */}
-            <aside className="md:col-span-4 lg:col-span-3">
-              <div className="sticky top-24 border border-border">
+            {/* System Specs sidebar — wider column */}
+            <aside className="md:col-span-5 lg:col-span-4">
+              <div className="sticky top-36 border border-border lg:top-40">
                 <div className="border-b border-border px-5 py-3 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
                   System Specs
                 </div>
@@ -229,7 +267,7 @@ export function CaseStudyPage({ study }: Props) {
             </aside>
 
             {/* Brief (MDX body) */}
-            <div className="min-w-0 md:col-span-8 lg:col-span-9">
+            <div className="min-w-0 md:col-span-7 lg:col-span-8">
               <div className="border-b border-border pb-4">
                 <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
                   ↳ 01 / Brief
@@ -239,7 +277,7 @@ export function CaseStudyPage({ study }: Props) {
                 </h2>
               </div>
 
-              <div className="mt-8 max-w-none space-y-6 overflow-visible break-words md:max-w-3xl [&_h2+ul]:mt-4 [&_h2+ul]:space-y-2 [&_h2+ul]:border-l [&_h2+ul]:border-border [&_h2+ul]:pl-4 [&_h2+ul_li]:font-mono [&_h2+ul_li]:text-[11px] [&_h2+ul_li]:uppercase [&_h2+ul_li]:tracking-[0.14em] [&_h2+ul_li]:text-muted-foreground [&_p:first-of-type]:font-display [&_p:first-of-type]:text-2xl [&_p:first-of-type]:font-light [&_p:first-of-type]:leading-snug [&_p:first-of-type]:tracking-tight [&_p:first-of-type]:md:text-3xl [&_p:not(:first-of-type)]:text-base [&_p:not(:first-of-type)]:leading-relaxed [&_p:not(:first-of-type)]:text-muted-foreground">
+              <div className="mx-auto mt-8 max-w-[65ch] space-y-6 overflow-visible break-words [&_h2+ul]:mt-4 [&_h2+ul]:space-y-2 [&_h2+ul]:border-l [&_h2+ul]:border-border [&_h2+ul]:pl-4 [&_h2+ul_li]:font-mono [&_h2+ul_li]:text-[11px] [&_h2+ul_li]:uppercase [&_h2+ul_li]:tracking-[0.14em] [&_h2+ul_li]:text-muted-foreground [&_p:first-of-type]:font-display [&_p:first-of-type]:text-2xl [&_p:first-of-type]:font-light [&_p:first-of-type]:leading-snug [&_p:first-of-type]:tracking-tight [&_p:first-of-type]:md:text-3xl [&_p:not(:first-of-type)]:text-base [&_p:not(:first-of-type)]:leading-relaxed [&_p:not(:first-of-type)]:text-muted-foreground">
                 <MDXContent code={study.mdx} components={projectMdxComponents} />
               </div>
             </div>
