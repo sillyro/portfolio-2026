@@ -9,6 +9,14 @@ import { Footer } from "@/components/site/Footer";
 import { cn } from "@/lib/utils";
 import { formatProjectCode, getNextProjectBySlug } from "@/lib/projectNav";
 
+/** Matte letterbox wash per slug (CSS color). Others use theme mix + soft blur from cover. */
+const COVER_MATTES: Partial<Record<string, string>> = {
+  "nda-digital-streaming-platform": "oklch(0.58 0.12 42)",
+  "bandcamp-redesign": "oklch(0.48 0.06 265)",
+  "mintstars-ecosystem": "oklch(0.52 0.08 155)",
+  mintstars: "oklch(0.52 0.08 155)",
+};
+
 export type Spec = { label: string; value: string };
 export type Block = {
   kind: "system" | "flow" | "type" | "color";
@@ -84,15 +92,21 @@ function SpecTableRow({ spec }: { spec: Spec }) {
   const isVideo = isVideoLabel(spec.label);
   const url = spec.value.trim();
   const showSmartButton = (isProjectLink || isVideo) && isHttpUrl(url);
+  const isImpact = normalizeSpecLabel(spec.label) === "impact";
 
   return (
-    <div className="flex gap-4 px-5 py-4">
-      <dt className="w-44 shrink-0 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground md:w-52">
+    <div
+      className={cn(
+        "grid grid-cols-[100px_1fr] gap-x-4 px-5 hyphens-none [overflow-wrap:normal]",
+        isImpact ? "min-h-[8.5rem] items-start py-7" : "items-center py-4",
+      )}
+    >
+      <dt className="font-mono text-[10px] uppercase leading-snug tracking-[0.22em] text-muted-foreground hyphens-none [overflow-wrap:normal]">
         {spec.label}
       </dt>
       <dd
         className={cn(
-          "min-w-0 flex-1 font-mono text-foreground",
+          "min-w-0 font-mono text-foreground hyphens-none [overflow-wrap:normal]",
           showSmartButton
             ? "text-xs normal-case tracking-normal"
             : "text-xs uppercase tracking-[0.18em]",
@@ -103,10 +117,10 @@ function SpecTableRow({ spec }: { spec: Spec }) {
         ) : (
           <span
             className={cn(
-              "block leading-snug",
+              "block leading-relaxed break-normal hyphens-none [overflow-wrap:normal]",
               specValueUsesNowrap(spec.label)
                 ? "whitespace-nowrap overflow-x-auto [scrollbar-width:thin]"
-                : "break-words",
+                : "",
             )}
           >
             {spec.value}
@@ -202,42 +216,55 @@ export function CaseStudyPage({ study }: Props) {
               {study.year}
             </p>
 
-            <div className="relative mt-12 overflow-hidden border border-border md:mt-16">
-              {/* Letterbox: matte stone + soft wash from cover (image only); video uses matte only */}
-              <div
-                className="absolute inset-0 bg-[color-mix(in_oklab,var(--muted)_38%,var(--background)_62%)]"
-                aria-hidden
-              />
-              {!heroVideo ? (
+            <div
+              className={cn(
+                "relative mt-12 w-full overflow-hidden border border-border md:mt-16",
+                "h-[500px] max-md:h-[min(500px,58svh)]",
+              )}
+              style={COVER_MATTES[study.slug] ? { backgroundColor: COVER_MATTES[study.slug] } : undefined}
+            >
+              {!COVER_MATTES[study.slug] ? (
+                <div
+                  className="absolute inset-0 bg-[color-mix(in_oklab,var(--muted)_38%,var(--background)_62%)]"
+                  aria-hidden
+                />
+              ) : null}
+              {!heroVideo && !COVER_MATTES[study.slug] ? (
                 <img
                   src={study.cover}
                   alt=""
-                  className="pointer-events-none absolute inset-0 h-full w-full scale-[1.15] object-cover opacity-[0.2] blur-3xl saturate-[1.05]"
+                  className="pointer-events-none absolute inset-0 h-full w-full scale-[1.12] object-cover opacity-[0.18] blur-3xl saturate-[1.08]"
+                  aria-hidden
+                />
+              ) : null}
+              {heroVideo && !COVER_MATTES[study.slug] ? (
+                <div
+                  className="absolute inset-0 bg-[color-mix(in_oklab,var(--muted)_22%,var(--background)_78%)]"
                   aria-hidden
                 />
               ) : null}
 
               {heroVideo ? (
-                <div className="relative z-10 flex min-h-[12rem] items-center justify-center bg-[color-mix(in_oklab,var(--muted)_22%,transparent)] p-4 md:min-h-[16rem] md:p-8">
+                <div className="relative z-10 flex h-full w-full items-center justify-center p-4 md:p-8">
                   <LazyViewportVideo
                     src={heroVideo}
                     loop
                     muted
                     playsInline
                     pauseWhenOutOfView={false}
-                    className="max-h-[80vh] w-full max-w-full object-contain"
-                    wrapperClassName="min-h-0 w-full max-w-full flex justify-center"
+                    className="max-h-full max-w-full object-contain"
+                    wrapperClassName="flex h-full w-full min-h-0 items-center justify-center"
                     aria-label={`${study.client} — preview`}
                   />
                 </div>
               ) : (
-                <div className="relative z-10 flex min-h-[min(70vh,28rem)] items-center justify-center p-4 md:p-10">
+                <div className="relative z-10 flex h-full w-full items-center justify-center p-4 md:p-8">
                   <img
                     src={study.cover}
                     alt={study.client}
                     width={1920}
                     height={1080}
-                    className="max-h-[80vh] w-auto max-w-full object-contain shadow-[0_12px_48px_-12px_color-mix(in_oklab,var(--ink)_18%,transparent)]"
+                    className="max-h-full max-w-full object-contain shadow-[0_12px_48px_-12px_color-mix(in_oklab,var(--ink)_18%,transparent)]"
                   />
                 </div>
               )}
@@ -249,16 +276,15 @@ export function CaseStudyPage({ study }: Props) {
           </div>
         </section>
 
-        {/* Specs + Brief */}
+        {/* Specs + Brief — fixed 350px specs rail on desktop */}
         <section className="border-b border-border">
-          <div className="mx-auto grid max-w-[1400px] gap-12 px-6 py-16 md:grid-cols-12 md:gap-10 md:px-10 md:py-24">
-            {/* System Specs sidebar — wider column */}
-            <aside className="md:col-span-5 lg:col-span-4">
+          <div className="mx-auto flex max-w-[1400px] flex-col gap-12 px-6 py-16 md:flex-row md:gap-10 md:px-10 md:py-24">
+            <aside className="md:w-[350px] md:min-w-[350px] md:max-w-[350px] md:shrink-0">
               <div className="sticky top-36 border border-border lg:top-40">
                 <div className="border-b border-border px-5 py-3 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
                   System Specs
                 </div>
-                <dl className="divide-y divide-border">
+                <dl className="divide-y divide-border hyphens-none [overflow-wrap:normal]">
                   {study.specs.map((s, i) => (
                     <SpecTableRow key={`${s.label}-${i}`} spec={s} />
                   ))}
@@ -267,7 +293,7 @@ export function CaseStudyPage({ study }: Props) {
             </aside>
 
             {/* Brief (MDX body) */}
-            <div className="min-w-0 md:col-span-7 lg:col-span-8">
+            <div className="min-w-0 flex-1">
               <div className="border-b border-border pb-4">
                 <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
                   ↳ 01 / Brief
@@ -277,7 +303,7 @@ export function CaseStudyPage({ study }: Props) {
                 </h2>
               </div>
 
-              <div className="mx-auto mt-8 max-w-[65ch] space-y-6 overflow-visible break-words [&_h2+ul]:mt-4 [&_h2+ul]:space-y-2 [&_h2+ul]:border-l [&_h2+ul]:border-border [&_h2+ul]:pl-4 [&_h2+ul_li]:font-mono [&_h2+ul_li]:text-[11px] [&_h2+ul_li]:uppercase [&_h2+ul_li]:tracking-[0.14em] [&_h2+ul_li]:text-muted-foreground [&_p:first-of-type]:font-display [&_p:first-of-type]:text-2xl [&_p:first-of-type]:font-light [&_p:first-of-type]:leading-snug [&_p:first-of-type]:tracking-tight [&_p:first-of-type]:md:text-3xl [&_p:not(:first-of-type)]:text-base [&_p:not(:first-of-type)]:leading-relaxed [&_p:not(:first-of-type)]:text-muted-foreground">
+              <div className="mx-auto mt-8 max-w-[600px] space-y-6 overflow-visible break-normal hyphens-none [overflow-wrap:normal] [&_h2+ul]:mt-4 [&_h2+ul]:space-y-2 [&_h2+ul]:border-l [&_h2+ul]:border-border [&_h2+ul]:pl-4 [&_h2+ul_li]:font-mono [&_h2+ul_li]:text-[11px] [&_h2+ul_li]:uppercase [&_h2+ul_li]:tracking-[0.14em] [&_h2+ul_li]:text-muted-foreground [&_p:first-of-type]:font-display [&_p:first-of-type]:text-2xl [&_p:first-of-type]:font-light [&_p:first-of-type]:leading-snug [&_p:first-of-type]:tracking-tight [&_p:first-of-type]:md:text-3xl [&_p:not(:first-of-type)]:text-base [&_p:not(:first-of-type)]:leading-relaxed [&_p:not(:first-of-type)]:text-muted-foreground">
                 <MDXContent code={study.mdx} components={projectMdxComponents} />
               </div>
             </div>
