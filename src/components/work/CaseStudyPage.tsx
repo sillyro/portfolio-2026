@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { allProjects } from "content-collections";
 import { Link } from "@tanstack/react-router";
 import { MDXContent } from "@content-collections/mdx/react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { projectMdxComponents } from "@/components/mdx";
 import { LazyViewportVideo } from "@/components/media/LazyViewportVideo";
 import { Footer } from "@/components/site/Footer";
@@ -39,28 +39,64 @@ function shouldShowBlockCaption(caption: string): boolean {
   return true;
 }
 
-function isProjectLinkOrVideoLabel(label: string): boolean {
-  const n = label.trim().replace(/\s+/g, " ").toLowerCase();
-  return n === "project link" || n === "video";
+function normalizeSpecLabel(label: string) {
+  return label.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function isProjectLinkLabel(label: string): boolean {
+  return normalizeSpecLabel(label) === "project link";
+}
+
+function isVideoLabel(label: string): boolean {
+  return normalizeSpecLabel(label) === "video";
+}
+
+function isHttpUrl(value: string): boolean {
+  const v = value.trim();
+  return /^https?:\/\//i.test(v);
+}
+
+function SpecSmartLink({ href, children }: { href: string; children: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        "inline-flex items-center gap-1.5 border border-border bg-[color-mix(in_oklab,var(--card)_90%,transparent)] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/90 transition-colors",
+        "hover:border-[color-mix(in_oklab,var(--signal)_45%,var(--border))] hover:text-[var(--signal)]",
+      )}
+    >
+      {children}
+      <ArrowUpRight className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
+    </a>
+  );
 }
 
 function SpecTableRow({ spec }: { spec: Spec }) {
-  const isUrlRow = isProjectLinkOrVideoLabel(spec.label);
+  const isProjectLink = isProjectLinkLabel(spec.label);
+  const isVideo = isVideoLabel(spec.label);
+  const url = spec.value.trim();
+  const showSmartButton = (isProjectLink || isVideo) && isHttpUrl(url);
 
   return (
-    <div className="grid grid-cols-3 gap-4 px-5 py-4">
-      <dt className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+    <div className="flex gap-4 px-5 py-4">
+      <dt className="w-32 shrink-0 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
         {spec.label}
       </dt>
       <dd
         className={cn(
-          "col-span-2 min-w-0 font-mono text-foreground",
-          isUrlRow
+          "min-w-0 flex-1 font-mono text-foreground",
+          showSmartButton
             ? "text-xs normal-case tracking-normal"
             : "text-xs uppercase tracking-[0.18em]",
         )}
       >
-        <span className={cn("block", isUrlRow ? "break-all leading-snug" : "break-words")}>{spec.value}</span>
+        {showSmartButton ? (
+          <SpecSmartLink href={url}>[ VISIT SITE ↗ ]</SpecSmartLink>
+        ) : (
+          <span className={cn("block break-words leading-snug")}>{spec.value}</span>
+        )}
       </dd>
     </div>
   );
@@ -72,6 +108,7 @@ export type CaseStudy = {
   client: string;
   title: string;
   year: string;
+  role: string;
   cover: string;
   /** Hero loop when set (e.g. MintStars Screen Studio clips). */
   videoUrl?: string;
@@ -135,6 +172,11 @@ export function CaseStudyPage({ study }: Props) {
             <h1 className="mt-2 max-w-5xl font-display text-4xl font-light leading-[1.05] tracking-tight md:text-7xl">
               {study.title}
             </h1>
+            <p className="mt-3 max-w-5xl font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              {study.role}
+              <span className="text-border"> · </span>
+              {study.year}
+            </p>
 
             <div className="relative mt-12 overflow-hidden border border-border bg-muted md:mt-16">
               {heroVideo ? (
@@ -197,7 +239,7 @@ export function CaseStudyPage({ study }: Props) {
                 </h2>
               </div>
 
-              <div className="mt-8 max-w-none space-y-6 overflow-visible break-words md:max-w-3xl [&_p:first-of-type]:font-display [&_p:first-of-type]:text-2xl [&_p:first-of-type]:font-light [&_p:first-of-type]:leading-snug [&_p:first-of-type]:tracking-tight [&_p:first-of-type]:md:text-3xl [&_p:not(:first-of-type)]:text-base [&_p:not(:first-of-type)]:leading-relaxed [&_p:not(:first-of-type)]:text-muted-foreground">
+              <div className="mt-8 max-w-none space-y-6 overflow-visible break-words md:max-w-3xl [&_h2+ul]:mt-4 [&_h2+ul]:space-y-2 [&_h2+ul]:border-l [&_h2+ul]:border-border [&_h2+ul]:pl-4 [&_h2+ul_li]:font-mono [&_h2+ul_li]:text-[11px] [&_h2+ul_li]:uppercase [&_h2+ul_li]:tracking-[0.14em] [&_h2+ul_li]:text-muted-foreground [&_p:first-of-type]:font-display [&_p:first-of-type]:text-2xl [&_p:first-of-type]:font-light [&_p:first-of-type]:leading-snug [&_p:first-of-type]:tracking-tight [&_p:first-of-type]:md:text-3xl [&_p:not(:first-of-type)]:text-base [&_p:not(:first-of-type)]:leading-relaxed [&_p:not(:first-of-type)]:text-muted-foreground">
                 <MDXContent code={study.mdx} components={projectMdxComponents} />
               </div>
             </div>
@@ -331,7 +373,7 @@ export function CaseStudyPage({ study }: Props) {
         </section>
 
         <section>
-          <div className="mx-auto flex max-w-[1400px] items-center justify-start gap-6 px-6 py-16 md:px-10 md:py-24">
+          <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-6 px-6 py-16 md:px-10 md:py-24">
             <Link
               to="/"
               className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-[var(--signal)]"
@@ -339,6 +381,20 @@ export function CaseStudyPage({ study }: Props) {
               <ArrowLeft className="h-4 w-4" />
               Back to Index
             </Link>
+            {nextProject ? (
+              <Link
+                to="/work/$slug"
+                params={{ slug: nextProject.slug }}
+                className="group inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-[var(--signal)]"
+              >
+                <span>Next Project</span>
+                <span className="text-foreground/35 transition-colors group-hover:text-[var(--signal)]">→</span>
+                <span className="text-foreground/85 transition-colors group-hover:text-[var(--signal)]">
+                  {formatProjectCode(nextProject)} / {nextProject.client}
+                </span>
+                <ArrowUpRight className="h-4 w-4 opacity-60 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:opacity-100" />
+              </Link>
+            ) : null}
           </div>
         </section>
       </main>

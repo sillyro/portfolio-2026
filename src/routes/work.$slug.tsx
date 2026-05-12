@@ -12,10 +12,36 @@ function resolveCaseStudyImage(ref: string | undefined): string | undefined {
   return resolveProjectMedia(ref);
 }
 
+function normalizeLabel(l: string) {
+  return l.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+/** Drop legacy rows, merge duplicate `Category` extras into a single line. */
+function normalizeExtraSpecs(raw: Project["extraSpecs"]): Spec[] {
+  const list = raw ?? [];
+  const categoryValues: string[] = [];
+  const out: Spec[] = [];
+
+  for (const e of list) {
+    const nl = normalizeLabel(e.label);
+    if (nl === "ux portfolio" || nl === "draft") continue;
+    if (nl === "category") {
+      const v = e.value.trim();
+      if (v) categoryValues.push(v);
+      continue;
+    }
+    out.push({ label: e.label, value: e.value });
+  }
+
+  if (categoryValues.length > 0) {
+    out.push({ label: "Category", value: categoryValues.join(" · ") });
+  }
+
+  return out;
+}
+
 function projectToCaseStudy(p: Project): CaseStudy {
-  const extraSpecs = (p.extraSpecs ?? []).filter(
-    (e) => e.label.trim().replace(/\s+/g, " ").toLowerCase() !== "ux portfolio",
-  );
+  const extraSpecs = normalizeExtraSpecs(p.extraSpecs);
 
   const specs: Spec[] = [
     { label: "Role", value: p.role },
@@ -31,6 +57,7 @@ function projectToCaseStudy(p: Project): CaseStudy {
     client: p.client,
     title: p.title,
     year: p.year,
+    role: p.role,
     cover: resolveCaseStudyImage(p.cover) ?? p.cover,
     videoUrl: p.videoUrl?.trim()
       ? (resolveProjectMedia(p.videoUrl.trim()) ?? p.videoUrl.trim())
