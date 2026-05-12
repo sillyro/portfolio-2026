@@ -32,3 +32,22 @@ export function formatProjectCode(p: Project): string {
   const letter = categoryPrefix(normalizeCategory(p.category));
   return `${letter}.${String(p.order).padStart(2, "0")}`;
 }
+
+/** Flat list order: category blocks, then `order`, then title. */
+export function groupProjectsByCategory(projects: readonly Project[]): Map<ProjectCategory, Project[]> {
+  const sorted = sortProjectsByCategoryAndOrder(projects);
+  const map = new Map<ProjectCategory, Project[]>();
+  for (const c of CATEGORY_ORDER) map.set(c, []);
+  for (const p of sorted) {
+    map.get(normalizeCategory(p.category))!.push(p);
+  }
+  return map;
+}
+
+export function getNextProjectBySlug(projects: readonly Project[], slug: string): Project | null {
+  const ordered = sortProjectsByCategoryAndOrder(projects);
+  if (ordered.length <= 1) return null;
+  const i = ordered.findIndex((p) => p.slug === slug);
+  if (i < 0) return null;
+  return ordered[(i + 1) % ordered.length] ?? null;
+}

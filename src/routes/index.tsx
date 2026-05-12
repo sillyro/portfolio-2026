@@ -21,9 +21,5 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  return (
-    <div className="min-h-dvh bg-background text-foreground">
-      <PortfolioHome />
-    </div>
-  );
+  return <PortfolioHome />;
 }

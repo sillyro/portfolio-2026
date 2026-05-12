@@ -2,12 +2,12 @@ import { useMemo } from "react";
 import { allProjects } from "content-collections";
 import { Link } from "@tanstack/react-router";
 import { MDXContent } from "@content-collections/mdx/react";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { projectMdxComponents } from "@/components/mdx";
 import { LazyViewportVideo } from "@/components/media/LazyViewportVideo";
 import { Footer } from "@/components/site/Footer";
 import { cn } from "@/lib/utils";
-import { sortProjectsByCategoryAndOrder } from "@/lib/projectNav";
+import { formatProjectCode, getNextProjectBySlug } from "@/lib/projectNav";
 
 export type Spec = { label: string; value: string };
 export type Block = {
@@ -84,30 +84,40 @@ export type CaseStudy = {
 type Props = { study: CaseStudy };
 
 export function CaseStudyPage({ study }: Props) {
-  const ordered = useMemo(() => sortProjectsByCategoryAndOrder(allProjects), []);
-  const nextSlug = useMemo(() => {
-    const i = ordered.findIndex((p) => p.slug === study.slug);
-    if (i < 0) return ordered[0]?.slug ?? study.slug;
-    return ordered[(i + 1) % ordered.length]?.slug ?? study.slug;
-  }, [ordered, study.slug]);
+  const nextProject = useMemo(() => getNextProjectBySlug(allProjects, study.slug), [study.slug]);
 
   const heroVideo =
     study.videoUrl?.trim() && isRenderableVideoSrc(study.videoUrl) ? study.videoUrl.trim() : null;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-full bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-[2px]">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-6 py-3 md:px-10">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground transition hover:text-[var(--signal)]"
+            className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-[var(--signal)]"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Index
           </Link>
-          <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:inline">
-            {study.year}
-          </span>
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-4 sm:gap-6">
+            <span className="hidden shrink-0 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:inline">
+              {study.year}
+            </span>
+            {nextProject ? (
+              <Link
+                to="/work/$slug"
+                params={{ slug: nextProject.slug }}
+                className="group inline-flex max-w-[min(56vw,20rem)] items-center gap-1.5 text-right font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:text-[var(--signal)] md:max-w-none"
+              >
+                <span className="shrink-0">Next Project</span>
+                <span className="text-foreground/35 transition-colors group-hover:text-[var(--signal)]">→</span>
+                <span className="min-w-0 truncate text-foreground/80 transition-colors group-hover:text-[var(--signal)]">
+                  {formatProjectCode(nextProject)} / {nextProject.client}
+                </span>
+              </Link>
+            ) : null}
+          </div>
         </div>
       </header>
       <main>
@@ -320,23 +330,14 @@ export function CaseStudyPage({ study }: Props) {
           </div>
         </section>
 
-        {/* Next */}
         <section>
-          <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-6 px-6 py-16 md:px-10 md:py-24">
+          <div className="mx-auto flex max-w-[1400px] items-center justify-start gap-6 px-6 py-16 md:px-10 md:py-24">
             <Link
               to="/"
-              className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] hover:text-foreground"
+              className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-[var(--signal)]"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Index
-            </Link>
-            <Link
-              to="/work/$slug"
-              params={{ slug: nextSlug }}
-              className="group inline-flex items-center gap-2 border-b border-foreground pb-1 font-mono text-xs uppercase tracking-[0.2em]"
-            >
-              Next Case Study
-              <ArrowUpRight className="h-4 w-4 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
             </Link>
           </div>
         </section>
