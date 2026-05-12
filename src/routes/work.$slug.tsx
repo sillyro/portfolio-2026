@@ -13,12 +13,16 @@ function resolveCaseStudyImage(ref: string | undefined): string | undefined {
 }
 
 function projectToCaseStudy(p: Project): CaseStudy {
+  const extraSpecs = (p.extraSpecs ?? []).filter(
+    (e) => e.label.trim().replace(/\s+/g, " ").toLowerCase() !== "ux portfolio",
+  );
+
   const specs: Spec[] = [
     { label: "Role", value: p.role },
     ...(p.methodology ? [{ label: "Methodology", value: p.methodology }] : []),
     { label: "Tools", value: p.tools },
     { label: "Timeline", value: p.timeline },
-    ...(p.extraSpecs ?? []),
+    ...extraSpecs,
   ];
 
   return {
@@ -28,6 +32,12 @@ function projectToCaseStudy(p: Project): CaseStudy {
     title: p.title,
     year: p.year,
     cover: resolveCaseStudyImage(p.cover) ?? p.cover,
+    videoUrl: p.videoUrl?.trim()
+      ? (resolveProjectMedia(p.videoUrl.trim()) ?? p.videoUrl.trim())
+      : undefined,
+    thumbnail: p.thumbnail?.trim()
+      ? (resolveProjectMedia(p.thumbnail.trim()) ?? p.thumbnail.trim())
+      : undefined,
     specs,
     blocks: p.blocks.map((b) => ({
       ...b,

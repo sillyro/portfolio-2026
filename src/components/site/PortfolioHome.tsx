@@ -7,6 +7,7 @@ import { LazyViewportVideo } from "@/components/media/LazyViewportVideo";
 import { Footer } from "@/components/site/Footer";
 import { resolveProjectMedia } from "@/lib/projectMedia";
 import { cn } from "@/lib/utils";
+import { formatProjectCode, sortProjectsByCategoryAndOrder } from "@/lib/projectNav";
 
 const CATEGORY_ORDER = ["product", "branding", "side-quest"] as const;
 type Category = (typeof CATEGORY_ORDER)[number];
@@ -17,30 +18,17 @@ const CATEGORY_LABEL: Record<Category, string> = {
   "side-quest": "Side Quests",
 };
 
-const FEATURED_ORDER = ["mintstars-ecosystem", "bandcamp-redesign", "honeycomb-ai"];
-
-function sortFeatured(a: Project, b: Project) {
-  const ia = FEATURED_ORDER.indexOf(a.slug);
-  const ib = FEATURED_ORDER.indexOf(b.slug);
-  const sa = ia === -1 ? 999 : ia;
-  const sb = ib === -1 ? 999 : ib;
-  if (sa !== sb) return sa - sb;
-  return a.title.localeCompare(b.title);
-}
-
 function isCategory(c: string): c is Category {
   return (CATEGORY_ORDER as readonly string[]).includes(c);
 }
 
 function groupByCategory(projects: Project[]) {
+  const sorted = sortProjectsByCategoryAndOrder(projects);
   const map = new Map<Category, Project[]>();
   for (const c of CATEGORY_ORDER) map.set(c, []);
-  for (const p of projects) {
+  for (const p of sorted) {
     const cat = isCategory(p.category) ? p.category : "side-quest";
     map.get(cat)!.push(p);
-  }
-  for (const list of map.values()) {
-    list.sort((a, b) => a.title.localeCompare(b.title));
   }
   return map;
 }
@@ -78,14 +66,25 @@ function ProjectNav({ activeSlug, grouped, featuredSlugs, onPickFeatured }: NavP
               {list.map((p) => {
                 const isFeatured = featuredSlugs.has(p.slug);
                 const isActive = isFeatured && activeSlug === p.slug;
+                const code = formatProjectCode(p);
                 const label = (
-                  <span
-                    className={cn(
-                      "block leading-snug transition-colors",
-                      isActive ? "font-medium text-[var(--signal)]" : "text-foreground/80 hover:text-foreground",
-                    )}
-                  >
-                    {p.title}
+                  <span className="flex gap-2 leading-snug transition-colors">
+                    <span
+                      className={cn(
+                        "shrink-0 font-mono text-[10px] tabular-nums tracking-[0.12em] text-muted-foreground",
+                        isActive ? "text-[var(--signal)]" : "",
+                      )}
+                    >
+                      {code}
+                    </span>
+                    <span
+                      className={cn(
+                        "min-w-0 flex-1",
+                        isActive ? "font-medium text-[var(--signal)]" : "text-foreground/80 hover:text-foreground",
+                      )}
+                    >
+                      {p.title}
+                    </span>
                   </span>
                 );
 
@@ -146,7 +145,7 @@ function FeaturedCard({ project }: FeaturedCardProps) {
       <div className="mb-6 flex items-start justify-between gap-4 px-6 md:px-10">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            {project.client}
+            {formatProjectCode(project)} · {project.client}
           </div>
           <h2 className="mt-2 max-w-3xl font-display text-3xl font-light leading-[1.08] tracking-tight text-foreground md:text-5xl">
             {project.title}
@@ -180,7 +179,7 @@ function FeaturedCard({ project }: FeaturedCardProps) {
                 loop
                 muted
                 playsInline
-                className="aspect-video w-full bg-muted/30 object-cover md:rounded-sm"
+                className="aspect-video w-full bg-muted/30 object-contain md:rounded-sm"
                 wrapperClassName="min-h-0"
                 aria-label={project.title}
               />
@@ -193,7 +192,7 @@ function FeaturedCard({ project }: FeaturedCardProps) {
                       : cover
                   }
                   alt=""
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain"
                   width={1920}
                   height={1080}
                 />
@@ -221,7 +220,7 @@ function SidebarBody(props: NavPanelProps) {
 
 export function PortfolioHome() {
   const featured = useMemo(
-    () => allProjects.filter((p) => p.featured).sort(sortFeatured),
+    () => sortProjectsByCategoryAndOrder(allProjects.filter((p) => p.featured)),
     [],
   );
   const grouped = useMemo(() => groupByCategory(allProjects), []);

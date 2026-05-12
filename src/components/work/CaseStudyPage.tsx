@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { allProjects } from "content-collections";
 import { Link } from "@tanstack/react-router";
 import { MDXContent } from "@content-collections/mdx/react";
@@ -5,6 +6,8 @@ import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { projectMdxComponents } from "@/components/mdx";
 import { LazyViewportVideo } from "@/components/media/LazyViewportVideo";
 import { Footer } from "@/components/site/Footer";
+import { cn } from "@/lib/utils";
+import { sortProjectsByCategoryAndOrder } from "@/lib/projectNav";
 
 export type Spec = { label: string; value: string };
 export type Block = {
@@ -27,6 +30,42 @@ function isRenderableVideoSrc(src: string | undefined): boolean {
   return false;
 }
 
+/** Webflow-style import rows (hex asset id + index, or id + label) — not real module captions. */
+function shouldShowBlockCaption(caption: string): boolean {
+  const t = caption.trim();
+  if (!t) return false;
+  if (/^[0-9a-f]{20,}(\s+\d+)+$/i.test(t)) return false;
+  if (/^[0-9a-f]{8,}\s+\S/i.test(t)) return false;
+  return true;
+}
+
+function isProjectLinkOrVideoLabel(label: string): boolean {
+  const n = label.trim().replace(/\s+/g, " ").toLowerCase();
+  return n === "project link" || n === "video";
+}
+
+function SpecTableRow({ spec }: { spec: Spec }) {
+  const isUrlRow = isProjectLinkOrVideoLabel(spec.label);
+
+  return (
+    <div className="grid grid-cols-3 gap-4 px-5 py-4">
+      <dt className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+        {spec.label}
+      </dt>
+      <dd
+        className={cn(
+          "col-span-2 min-w-0 font-mono text-foreground",
+          isUrlRow
+            ? "text-xs normal-case tracking-normal"
+            : "text-xs uppercase tracking-[0.18em]",
+        )}
+      >
+        <span className={cn("block", isUrlRow ? "break-all leading-snug" : "break-words")}>{spec.value}</span>
+      </dd>
+    </div>
+  );
+}
+
 export type CaseStudy = {
   slug: string;
   index: string;
@@ -34,6 +73,9 @@ export type CaseStudy = {
   title: string;
   year: string;
   cover: string;
+  /** Hero loop when set (e.g. MintStars Screen Studio clips). */
+  videoUrl?: string;
+  thumbnail?: string;
   specs: Spec[];
   blocks: Block[];
   mdx: string;
@@ -42,8 +84,15 @@ export type CaseStudy = {
 type Props = { study: CaseStudy };
 
 export function CaseStudyPage({ study }: Props) {
-  const i = allProjects.findIndex((p) => p.slug === study.slug);
-  const nextSlug = allProjects[i >= 0 ? (i + 1) % allProjects.length : 0]?.slug ?? study.slug;
+  const ordered = useMemo(() => sortProjectsByCategoryAndOrder(allProjects), []);
+  const nextSlug = useMemo(() => {
+    const i = ordered.findIndex((p) => p.slug === study.slug);
+    if (i < 0) return ordered[0]?.slug ?? study.slug;
+    return ordered[(i + 1) % ordered.length]?.slug ?? study.slug;
+  }, [ordered, study.slug]);
+
+  const heroVideo =
+    study.videoUrl?.trim() && isRenderableVideoSrc(study.videoUrl) ? study.videoUrl.trim() : null;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -77,14 +126,31 @@ export function CaseStudyPage({ study }: Props) {
               {study.title}
             </h1>
 
-            <div className="relative mt-12 aspect-[16/9] overflow-hidden border border-border bg-muted md:mt-16">
-              <img
-                src={study.cover}
-                alt={study.client}
-                width={1920}
-                height={1080}
-                className="h-full w-full object-cover"
-              />
+            <div className="relative mt-12 overflow-hidden border border-border bg-muted md:mt-16">
+              {heroVideo ? (
+                <div className="flex min-h-[12rem] items-center justify-center p-4 md:min-h-[16rem] md:p-8">
+                  <LazyViewportVideo
+                    src={heroVideo}
+                    loop
+                    muted
+                    playsInline
+                    pauseWhenOutOfView={false}
+                    className="max-h-[80vh] w-full max-w-full object-contain"
+                    wrapperClassName="min-h-0 w-full max-w-full flex justify-center"
+                    aria-label={`${study.client} — preview`}
+                  />
+                </div>
+              ) : (
+                <div className="flex max-h-[80vh] min-h-[12rem] items-center justify-center p-4 md:p-8">
+                  <img
+                    src={study.cover}
+                    alt={study.client}
+                    width={1920}
+                    height={1080}
+                    className="max-h-[80vh] w-auto max-w-full object-contain"
+                  />
+                </div>
+              )}
               <div className="pointer-events-none absolute inset-4 border border-[color-mix(in_oklab,var(--foreground)_10%,transparent)]" />
               <div className="pointer-events-none absolute left-4 top-4 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
                 Cover · {study.index}
@@ -103,22 +169,15 @@ export function CaseStudyPage({ study }: Props) {
                   System Specs
                 </div>
                 <dl className="divide-y divide-border">
-                  {study.specs.map((s) => (
-                    <div key={s.label} className="grid grid-cols-3 gap-4 px-5 py-4">
-                      <dt className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                        {s.label}
-                      </dt>
-                      <dd className="col-span-2 font-mono text-xs uppercase tracking-[0.18em] text-foreground">
-                        {s.value}
-                      </dd>
-                    </div>
+                  {study.specs.map((s, i) => (
+                    <SpecTableRow key={`${s.label}-${i}`} spec={s} />
                   ))}
                 </dl>
               </div>
             </aside>
 
             {/* Brief (MDX body) */}
-            <div className="md:col-span-8 lg:col-span-9">
+            <div className="min-w-0 md:col-span-8 lg:col-span-9">
               <div className="border-b border-border pb-4">
                 <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
                   ↳ 01 / Brief
@@ -128,7 +187,7 @@ export function CaseStudyPage({ study }: Props) {
                 </h2>
               </div>
 
-              <div className="mt-8 space-y-6 md:max-w-3xl [&_p:first-of-type]:font-display [&_p:first-of-type]:text-2xl [&_p:first-of-type]:font-light [&_p:first-of-type]:leading-snug [&_p:first-of-type]:tracking-tight [&_p:first-of-type]:md:text-3xl [&_p:not(:first-of-type)]:text-base [&_p:not(:first-of-type)]:leading-relaxed [&_p:not(:first-of-type)]:text-muted-foreground">
+              <div className="mt-8 max-w-none space-y-6 overflow-visible break-words md:max-w-3xl [&_p:first-of-type]:font-display [&_p:first-of-type]:text-2xl [&_p:first-of-type]:font-light [&_p:first-of-type]:leading-snug [&_p:first-of-type]:tracking-tight [&_p:first-of-type]:md:text-3xl [&_p:not(:first-of-type)]:text-base [&_p:not(:first-of-type)]:leading-relaxed [&_p:not(:first-of-type)]:text-muted-foreground">
                 <MDXContent code={study.mdx} components={projectMdxComponents} />
               </div>
             </div>
@@ -166,11 +225,11 @@ export function CaseStudyPage({ study }: Props) {
                   {b.videoSrc && isRenderableVideoSrc(b.videoSrc) ? (
                     <div className="relative bg-muted p-4 md:p-8">
                       <LazyViewportVideo
-                        src={b.videoSrc}
+                        src={b.videoSrc!}
                         loop
                         muted
                         playsInline
-                        className="w-full rounded-xl shadow-lg border border-white/10"
+                        className="w-full max-h-[80vh] rounded-xl border border-white/10 object-contain shadow-lg"
                         aria-label={b.title}
                       />
                     </div>
@@ -191,7 +250,7 @@ export function CaseStudyPage({ study }: Props) {
                               loading="lazy"
                               width={1170}
                               height={2532}
-                              className="max-h-[min(85vh,920px)] w-auto max-w-full object-contain"
+                              className="max-h-[80vh] w-auto max-w-full object-contain"
                             />
                             <div className="pointer-events-none absolute inset-4 border border-foreground/10" />
                           </div>
@@ -207,11 +266,11 @@ export function CaseStudyPage({ study }: Props) {
                         <div className="relative flex justify-center bg-muted p-4 md:p-6">
                           {isRenderableVideoSrc(b.afterVideo) ? (
                             <LazyViewportVideo
-                              src={b.afterVideo}
+                              src={b.afterVideo!}
                               loop
                               muted
                               playsInline
-                              className="max-h-[min(85vh,920px)] w-auto max-w-full object-contain"
+                              className="max-h-[80vh] w-auto max-w-full object-contain"
                               aria-label={`${b.title} — after`}
                             />
                           ) : (
@@ -232,7 +291,7 @@ export function CaseStudyPage({ study }: Props) {
                       </div>
                     </div>
                   ) : (
-                    <div className="relative aspect-[21/9] w-full overflow-hidden bg-muted">
+                    <div className="relative flex min-h-[12rem] w-full justify-center overflow-hidden bg-muted py-6 md:py-10">
                       {b.image && (
                         <img
                           src={b.image}
@@ -240,7 +299,7 @@ export function CaseStudyPage({ study }: Props) {
                           loading="lazy"
                           width={1920}
                           height={820}
-                          className="h-full w-full object-cover"
+                          className="max-h-[80vh] w-auto max-w-full object-contain"
                         />
                       )}
                       <div className="bg-blueprint-fine pointer-events-none absolute inset-0 opacity-30 mix-blend-multiply" />
@@ -248,11 +307,13 @@ export function CaseStudyPage({ study }: Props) {
                     </div>
                   )}
 
-                  <div className="px-5 py-5 md:px-8 md:py-6">
-                    <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
-                      {b.caption}
-                    </p>
-                  </div>
+                  {shouldShowBlockCaption(b.caption) ? (
+                    <div className="px-5 py-5 md:px-8 md:py-6">
+                      <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
+                        {b.caption}
+                      </p>
+                    </div>
+                  ) : null}
                 </article>
               ))}
             </div>

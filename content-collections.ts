@@ -30,6 +30,8 @@ const projects = defineCollection({
     slug: z.string(),
     index: z.string(),
     category: z.enum(["product", "branding", "side-quest"]),
+    /** Sort order within category (1-based). */
+    order: z.number(),
     featured: z.boolean(),
     /** Optional hero loop for cards / meta (public path to `.mp4`). */
     videoUrl: z.string().optional(),
