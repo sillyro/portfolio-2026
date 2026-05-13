@@ -9,14 +9,6 @@ import { Footer } from "@/components/site/Footer";
 import { cn } from "@/lib/utils";
 import { formatProjectCode, getNextProjectBySlug } from "@/lib/projectNav";
 
-/** Matte letterbox wash per slug (CSS color). Others use theme mix + soft blur from cover. */
-const COVER_MATTES: Partial<Record<string, string>> = {
-  "nda-digital-streaming-platform": "oklch(0.58 0.12 42)",
-  "bandcamp-redesign": "oklch(0.48 0.06 265)",
-  "mintstars-ecosystem": "oklch(0.52 0.08 155)",
-  mintstars: "oklch(0.52 0.08 155)",
-};
-
 export type Spec = { label: string; value: string };
 export type Block = {
   kind: "system" | "flow" | "type" | "color";
@@ -218,31 +210,11 @@ export function CaseStudyPage({ study }: Props) {
 
             <div
               className={cn(
-                "relative mt-12 w-full overflow-hidden border border-border md:mt-16",
+                "relative mt-12 w-full overflow-hidden border border-border bg-transparent md:mt-16",
                 "h-[500px] max-md:h-[min(500px,58svh)]",
               )}
-              style={COVER_MATTES[study.slug] ? { backgroundColor: COVER_MATTES[study.slug] } : undefined}
             >
-              {!COVER_MATTES[study.slug] ? (
-                <div
-                  className="absolute inset-0 bg-[color-mix(in_oklab,var(--muted)_38%,var(--background)_62%)]"
-                  aria-hidden
-                />
-              ) : null}
-              {!heroVideo && !COVER_MATTES[study.slug] ? (
-                <img
-                  src={study.cover}
-                  alt=""
-                  className="pointer-events-none absolute inset-0 h-full w-full scale-[1.12] object-cover opacity-[0.18] blur-3xl saturate-[1.08]"
-                  aria-hidden
-                />
-              ) : null}
-              {heroVideo && !COVER_MATTES[study.slug] ? (
-                <div
-                  className="absolute inset-0 bg-[color-mix(in_oklab,var(--muted)_22%,var(--background)_78%)]"
-                  aria-hidden
-                />
-              ) : null}
+              <div className="pointer-events-none absolute inset-0 bg-cutting-mat opacity-[0.35]" aria-hidden />
 
               {heroVideo ? (
                 <div className="relative z-10 flex h-full w-full items-center justify-center p-4 md:p-8">

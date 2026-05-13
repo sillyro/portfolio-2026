@@ -4,6 +4,7 @@ import type { Project } from "content-collections";
 import { CaseStudyPage, type CaseStudy, type Spec } from "@/components/work/CaseStudyPage";
 import { resolveBandcampRedesignImage } from "@/lib/bandcampRedesignAssets";
 import { resolveProjectMedia } from "@/lib/projectMedia";
+import { SITE_ORIGIN, absoluteUrl } from "@/lib/site";
 
 function resolveCaseStudyImage(ref: string | undefined): string | undefined {
   if (!ref) return undefined;
@@ -83,17 +84,25 @@ export const Route = createFileRoute("/work/$slug")({
     if (!doc) throw notFound();
     return { study: projectToCaseStudy(doc) };
   },
-  head: ({ loaderData }) => {
+  head: ({ loaderData, params }) => {
     const s = loaderData?.study;
-    const title = s ? `${s.client} — Case Study · Rohan Misra` : "Case Study · Rohan Misra";
-    const description = s?.title ?? "Selected product design case study.";
+    const title = s
+      ? `${s.client} — Case Study · Rohan Misra · rohanmisra.studio`
+      : "Case Study · Rohan Misra · rohanmisra.studio";
+    const description = s?.title ?? "Selected product design case study — rohanmisra.studio.";
+    const caseUrl = `${SITE_ORIGIN}/work/${params.slug}`;
     return {
       meta: [
         { title },
         { name: "description", content: description },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
-        ...(s ? [{ property: "og:image", content: s.cover }] : []),
+        { property: "og:type", content: "article" },
+        { property: "og:url", content: caseUrl },
+        ...(s ? [{ property: "og:image", content: absoluteUrl(s.cover) }] : []),
+        ...(s
+          ? [{ name: "twitter:card", content: "summary_large_image" }, { name: "twitter:image", content: absoluteUrl(s.cover) }]
+          : []),
       ],
     };
   },

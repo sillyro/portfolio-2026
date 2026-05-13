@@ -68,7 +68,7 @@ function ProjectPreviewCard({ project }: ProjectPreviewCardProps) {
       <div className="px-6 md:px-10">
         <div
           className={cn(
-            "relative overflow-hidden bg-[color-mix(in_oklab,var(--card)_88%,var(--muted))]",
+            "relative overflow-hidden bg-transparent",
             "border border-border shadow-[inset_0_1px_0_color-mix(in_oklab,white_55%,transparent)]",
           )}
         >
@@ -80,7 +80,7 @@ function ProjectPreviewCard({ project }: ProjectPreviewCardProps) {
                 loop
                 muted
                 playsInline
-                className="aspect-video w-full bg-muted/30 object-contain md:rounded-sm"
+                className="aspect-video w-full bg-transparent object-contain md:rounded-sm"
                 wrapperClassName="min-h-0"
                 aria-label={project.title}
               />

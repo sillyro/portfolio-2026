@@ -1,5 +1,6 @@
 import { Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { PortfolioApplicationShell } from "@/components/site/PortfolioApplicationShell";
+import { SITE_DEFAULT_OG_IMAGE_PATH, SITE_ORIGIN, absoluteUrl } from "@/lib/site";
 
 import appCss from "../styles.css?url";
 
@@ -30,14 +31,30 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Rohan Misra — Product Designer · rohanmisra.studio" },
+      {
+        name: "description",
+        content:
+          "Portfolio of Rohan Misra — product design, systems, and brand work. Based between Bombay and Brooklyn.",
+      },
+      { name: "author", content: "Rohan Misra" },
+      { property: "og:site_name", content: "Rohan Misra" },
+      { property: "og:title", content: "Rohan Misra — Product Designer · rohanmisra.studio" },
+      {
+        property: "og:description",
+        content:
+          "Systems, sound, and soul — product design and branding portfolio at rohanmisra.studio.",
+      },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { property: "og:url", content: SITE_ORIGIN },
+      { property: "og:image", content: absoluteUrl(SITE_DEFAULT_OG_IMAGE_PATH) },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Rohan Misra — Product Designer" },
+      {
+        name: "twitter:description",
+        content: "Portfolio — systems, sound & soul. rohanmisra.studio",
+      },
+      { name: "twitter:image", content: absoluteUrl(SITE_DEFAULT_OG_IMAGE_PATH) },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
