@@ -14,6 +14,28 @@ const outDir = path.join(root, "content", "projects");
 
 const KINDS = ["system", "flow", "type", "color"];
 
+/** Canonical portfolio slugs — CSV rows outside this set are skipped. */
+const PORTFOLIO_SLUGS = new Set([
+  "mintstars-ecosystem",
+  "bandcamp-redesign",
+  "nda-digital-streaming-platform",
+  "aquarium",
+  "popp-ai",
+  "plugin-design",
+  "match-tune",
+  "wing-io",
+  "the-riddle-festival-stage",
+  "2-delta-delta-records",
+  "basement-beats",
+  "dollymix-studios",
+  "event-posters",
+  "off-licence-clobber",
+  "honeycomb-ai",
+  "mintstars",
+  "just-looking",
+  "new-beginning-ep-listening-party",
+]);
+
 const MAIN_CATEGORY_TO_ROLE = {
   "user-interface-design": "UI Designer",
   "user-experience-design": "UX Designer",
@@ -227,6 +249,7 @@ for (let i = 0; i < records.length; i++) {
   const row = records[i];
   const slug = (row.Slug ?? "").trim();
   if (!slug) continue;
+  if (!PORTFOLIO_SLUGS.has(slug)) continue;
   const mdx = buildMdx(row, i);
   fs.writeFileSync(path.join(outDir, `${slug}.mdx`), mdx, "utf8");
   n += 1;
