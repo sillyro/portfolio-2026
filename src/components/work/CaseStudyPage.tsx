@@ -57,9 +57,44 @@ function isVideoLabel(label: string): boolean {
   return normalizeSpecLabel(label) === "video";
 }
 
+function isLiveLinkLabel(label: string): boolean {
+  return normalizeSpecLabel(label) === "live";
+}
+
+function isExternalUrlSpecLabel(label: string): boolean {
+  return isProjectLinkLabel(label) || isVideoLabel(label) || isLiveLinkLabel(label);
+}
+
 function isHttpUrl(value: string): boolean {
   const v = value.trim();
   return /^https?:\/\//i.test(v);
+}
+
+const PRESS_URL_PATTERNS = [
+  /djmag\.com/i,
+  /pitchfork/i,
+  /billboard\.com/i,
+  /nme\.com/i,
+  /mixmag\.net/i,
+  /residentadvisor\.net/i,
+  /theguardian\.com/i,
+  /bbc\.(co\.uk|com)/i,
+  /\/(news|press|article)s?\//i,
+];
+
+function isPressUrl(url: string): boolean {
+  try {
+    const { hostname, pathname } = new URL(url.trim());
+    const target = `${hostname}${pathname}`;
+    return PRESS_URL_PATTERNS.some((pattern) => pattern.test(target));
+  } catch {
+    return false;
+  }
+}
+
+function getSpecLinkButtonText(url: string): string {
+  if (isPressUrl(url)) return "[ VIEW PRESS ↗ ]";
+  return "[ VISIT SITE ↗ ]";
 }
 
 function SpecSmartLink({ href, children }: { href: string; children: string }) {
@@ -69,7 +104,7 @@ function SpecSmartLink({ href, children }: { href: string; children: string }) {
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "inline-flex items-center gap-1.5 border border-border bg-[color-mix(in_oklab,var(--card)_90%,transparent)] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/90 transition-colors",
+        "inline-flex max-w-full shrink-0 items-center gap-1.5 border border-border bg-[color-mix(in_oklab,var(--card)_90%,transparent)] px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-foreground/90 transition-colors",
         "hover:border-[color-mix(in_oklab,var(--signal)_45%,var(--border))] hover:text-[var(--signal)]",
       )}
     >
@@ -80,10 +115,8 @@ function SpecSmartLink({ href, children }: { href: string; children: string }) {
 }
 
 function SpecTableRow({ spec }: { spec: Spec }) {
-  const isProjectLink = isProjectLinkLabel(spec.label);
-  const isVideo = isVideoLabel(spec.label);
   const url = spec.value.trim();
-  const showSmartButton = (isProjectLink || isVideo) && isHttpUrl(url);
+  const showSmartButton = isExternalUrlSpecLabel(spec.label) && isHttpUrl(url);
   const isImpact = normalizeSpecLabel(spec.label) === "impact";
 
   return (
@@ -98,14 +131,14 @@ function SpecTableRow({ spec }: { spec: Spec }) {
       </dt>
       <dd
         className={cn(
-          "min-w-0 font-mono text-foreground hyphens-none [overflow-wrap:normal]",
+          "min-w-0 w-full font-mono text-foreground hyphens-none [overflow-wrap:normal]",
           showSmartButton
-            ? "text-xs normal-case tracking-normal"
+            ? "flex w-full flex-col"
             : "text-xs uppercase tracking-[0.18em]",
         )}
       >
         {showSmartButton ? (
-          <SpecSmartLink href={url}>[ VISIT SITE ↗ ]</SpecSmartLink>
+          <SpecSmartLink href={url}>{getSpecLinkButtonText(url)}</SpecSmartLink>
         ) : (
           <span
             className={cn(
