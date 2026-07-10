@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, Outlet, useParams, useRouterState } from "@tanstack/react-router";
+import { Link, Outlet, useNavigate, useParams, useRouterState } from "@tanstack/react-router";
 import { allProjects } from "content-collections";
 import { PortfolioShellProvider, usePortfolioShell } from "@/components/site/portfolioShellContext";
 import { cn } from "@/lib/utils";
@@ -22,9 +22,11 @@ const navLinkHover =
 function ProjectNav({
   grouped,
   activeSlug,
+  onCategoryClick,
 }: {
   grouped: Map<ProjectCategory, Project[]>;
   activeSlug: string | null;
+  onCategoryClick: (category: ProjectCategory) => void;
 }) {
   return (
     <nav className="flex flex-col gap-8" aria-label="Projects">
@@ -33,9 +35,16 @@ function ProjectNav({
         if (list.length === 0) return null;
         return (
           <div key={cat}>
-            <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => onCategoryClick(cat)}
+              className={cn(
+                "mb-2 text-left font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground",
+                "cursor-pointer transition-colors hover:text-[var(--signal)]",
+              )}
+            >
               {CATEGORY_LABEL[cat]}
-            </div>
+            </button>
             <ul className="space-y-1.5">
               {list.map((p) => {
                 const isActive = activeSlug === p.slug;
@@ -119,21 +128,38 @@ function Bio({
   );
 }
 
-function SidebarBody({ grouped, activeSlug }: { grouped: Map<ProjectCategory, Project[]>; activeSlug: string | null }) {
+function SidebarBody({
+  grouped,
+  activeSlug,
+  onCategoryClick,
+}: {
+  grouped: Map<ProjectCategory, Project[]>;
+  activeSlug: string | null;
+  onCategoryClick: (category: ProjectCategory) => void;
+}) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { scrollMainToTop } = usePortfolioShell();
 
   return (
     <>
       <Bio pathname={pathname} scrollMainToTop={scrollMainToTop} />
-      <ProjectNav grouped={grouped} activeSlug={activeSlug} />
+      <ProjectNav grouped={grouped} activeSlug={activeSlug} onCategoryClick={onCategoryClick} />
     </>
   );
 }
 
 function ShellLayoutInner() {
-  const { mainScrollRef, scrollMainToTop, homeSpiedSlug, setHomeSpiedSlug } = usePortfolioShell();
+  const {
+    mainScrollRef,
+    scrollMainToTop,
+    scrollToHomeCategory,
+    queueHomeCategoryScroll,
+    takePendingHomeCategoryScroll,
+    homeSpiedSlug,
+    setHomeSpiedSlug,
+  } = usePortfolioShell();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
   const params = useParams({ strict: false }) as { slug?: string };
   const prevPathRef = useRef<string | null>(null);
 
@@ -143,14 +169,40 @@ function ShellLayoutInner() {
 
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const handleCategoryClick = (category: ProjectCategory) => {
+    setMenuOpen(false);
+
+    if (pathname === "/") {
+      scrollToHomeCategory(category, "smooth");
+      return;
+    }
+
+    queueHomeCategoryScroll(category);
+    navigate({ to: "/" });
+  };
+
   useEffect(() => {
     if (pathname !== "/") {
       setHomeSpiedSlug(null);
-    } else if (prevPathRef.current !== null && prevPathRef.current !== "/" && pathname === "/") {
-      scrollMainToTop("instant");
+    }
+
+    if (prevPathRef.current !== null && prevPathRef.current !== pathname) {
+      const pendingCategory = takePendingHomeCategoryScroll();
+
+      if (pathname === "/" && pendingCategory) {
+        requestAnimationFrame(() => scrollToHomeCategory(pendingCategory, "instant"));
+      } else {
+        scrollMainToTop("instant");
+      }
     }
     prevPathRef.current = pathname;
-  }, [pathname, scrollMainToTop, setHomeSpiedSlug]);
+  }, [
+    pathname,
+    scrollMainToTop,
+    scrollToHomeCategory,
+    takePendingHomeCategoryScroll,
+    setHomeSpiedSlug,
+  ]);
 
   useEffect(() => {
     if (menuOpen) {
@@ -162,7 +214,7 @@ function ShellLayoutInner() {
     }
   }, [menuOpen]);
 
-  const navProps = { grouped, activeSlug: activeSlugForNav };
+  const navProps = { grouped, activeSlug: activeSlugForNav, onCategoryClick: handleCategoryClick };
 
   return (
     <div className="relative min-h-dvh bg-background text-foreground">

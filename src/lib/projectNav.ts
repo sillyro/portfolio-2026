@@ -3,6 +3,10 @@ import type { Project } from "content-collections";
 export const CATEGORY_ORDER = ["product", "branding", "side-quest"] as const;
 export type ProjectCategory = (typeof CATEGORY_ORDER)[number];
 
+export function homeCategorySectionId(category: ProjectCategory): string {
+  return `category-${category}`;
+}
+
 export function normalizeCategory(category: string): ProjectCategory {
   return (CATEGORY_ORDER as readonly string[]).includes(category)
     ? (category as ProjectCategory)

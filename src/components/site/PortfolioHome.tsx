@@ -12,6 +12,7 @@ import {
   CATEGORY_ORDER,
   formatProjectCode,
   groupProjectsByCategory,
+  homeCategorySectionId,
   type ProjectCategory,
 } from "@/lib/projectNav";
 
@@ -112,7 +113,7 @@ function ProjectPreviewCard({ project }: ProjectPreviewCardProps) {
 
 export function PortfolioHome() {
   const grouped = useMemo(() => groupProjectsByCategory(allProjects), []);
-  const { mainScrollRef, setHomeSpiedSlug } = usePortfolioShell();
+  const { mainScrollRef, setHomeSpiedSlug, scrollToHomeCategory } = usePortfolioShell();
 
   const scrollOrderSlugs = useMemo(() => {
     const slugs: string[] = [];
@@ -153,6 +154,16 @@ export function PortfolioHome() {
     return () => observer.disconnect();
   }, [scrollOrderSlugs, mainScrollRef, setHomeSpiedSlug]);
 
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (!hash.startsWith("category-")) return;
+
+    const category = hash.replace("category-", "") as ProjectCategory;
+    if (!(CATEGORY_ORDER as readonly string[]).includes(category)) return;
+
+    requestAnimationFrame(() => scrollToHomeCategory(category, "instant"));
+  }, [scrollToHomeCategory]);
+
   const hasAny = CATEGORY_ORDER.some((c) => (grouped.get(c)?.length ?? 0) > 0);
 
   return (
@@ -166,7 +177,7 @@ export function PortfolioHome() {
           const list = grouped.get(cat) ?? [];
           if (list.length === 0) return null;
           return (
-            <section key={cat} className="relative">
+            <section key={cat} id={homeCategorySectionId(cat)} className="relative scroll-mt-6 md:scroll-mt-8">
               <div
                 className={cn(
                   "sticky top-0 z-30 border-b border-border bg-background/90 px-6 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground backdrop-blur-[2px] md:px-10",

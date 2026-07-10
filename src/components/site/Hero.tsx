@@ -10,7 +10,7 @@ export function Hero() {
         {/* meta line */}
         <div className="mb-12 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground md:mb-20">
           <span>Index — 001 / Portfolio</span>
-          <span className="hidden md:inline">Rev. 2026.05 — Bombay × Brooklyn</span>
+          <span className="hidden md:inline">Rev. 2026.05 — London / Global Remote</span>
           <span>EST. 1998</span>
         </div>
 

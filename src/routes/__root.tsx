@@ -35,7 +35,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Portfolio of Rohan Misra — product design, systems, and brand work. Based between Bombay and Brooklyn.",
+          "Portfolio of Rohan Misra — product design, systems, and brand work. Based in London / Global Remote.",
       },
       { name: "author", content: "Rohan Misra" },
       { property: "og:site_name", content: "Rohan Misra" },
