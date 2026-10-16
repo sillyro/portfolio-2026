@@ -7,7 +7,7 @@ export function Footer() {
         <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Available for select product and systems work. Based in London / Global Remote.
+              Available for select product and design work. Based in London / remote.
             </p>
             <a
               href="mailto:rohan@dollymixstudios.com"
@@ -45,9 +45,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col gap-2 border-t border-border pt-6 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground md:flex-row md:justify-between">
+        <div className="mt-12 border-t border-border pt-6 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
           <span>© 2026 Rohan Misra</span>
-          <span>Fraunces · Inter · JetBrains Mono</span>
         </div>
       </div>
     </footer>

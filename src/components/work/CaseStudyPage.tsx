@@ -43,12 +43,6 @@ function normalizeSpecLabel(label: string) {
   return label.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-/** Spec rows whose values read as compact tokens (toolchains, dates); allow horizontal scroll vs wrapping. */
-function specValueUsesNowrap(label: string): boolean {
-  const n = normalizeSpecLabel(label);
-  return ["tools", "timeline", "status", "category", "methodology", "role"].includes(n);
-}
-
 function isProjectLinkLabel(label: string): boolean {
   return normalizeSpecLabel(label) === "project link";
 }
@@ -114,18 +108,24 @@ function SpecSmartLink({ href, children }: { href: string; children: string }) {
   );
 }
 
+/** Captions written as `Title — body` get a subheading under the module media. */
+function splitBlockCaption(caption: string): { heading?: string; body: string } {
+  const text = caption.trim();
+  const separator = " — ";
+  const index = text.indexOf(separator);
+  if (index <= 0) return { body: text };
+  const heading = text.slice(0, index).trim();
+  const body = text.slice(index + separator.length).trim();
+  if (!heading || !body) return { body: text };
+  return { heading, body };
+}
+
 function SpecTableRow({ spec }: { spec: Spec }) {
   const url = spec.value.trim();
   const showSmartButton = isExternalUrlSpecLabel(spec.label) && isHttpUrl(url);
-  const isImpact = normalizeSpecLabel(spec.label) === "impact";
 
   return (
-    <div
-      className={cn(
-        "grid grid-cols-[100px_1fr] gap-x-4 px-5 hyphens-none [overflow-wrap:normal]",
-        isImpact ? "min-h-[8.5rem] items-start py-7" : "items-center py-4",
-      )}
-    >
+    <div className="flex flex-col gap-1.5 px-4 py-4 hyphens-none [overflow-wrap:normal]">
       <dt className="font-mono text-[10px] uppercase leading-snug tracking-[0.22em] text-muted-foreground hyphens-none [overflow-wrap:normal]">
         {spec.label}
       </dt>
@@ -134,22 +134,13 @@ function SpecTableRow({ spec }: { spec: Spec }) {
           "min-w-0 w-full font-mono text-foreground hyphens-none [overflow-wrap:normal]",
           showSmartButton
             ? "flex w-full flex-col"
-            : "text-xs uppercase tracking-[0.18em]",
+            : "text-xs uppercase leading-relaxed tracking-[0.14em]",
         )}
       >
         {showSmartButton ? (
           <SpecSmartLink href={url}>{getSpecLinkButtonText(url)}</SpecSmartLink>
         ) : (
-          <span
-            className={cn(
-              "block leading-relaxed break-normal hyphens-none [overflow-wrap:normal]",
-              specValueUsesNowrap(spec.label)
-                ? "whitespace-nowrap overflow-x-auto [scrollbar-width:thin]"
-                : "",
-            )}
-          >
-            {spec.value}
-          </span>
+          <span className="block break-normal hyphens-none [overflow-wrap:normal]">{spec.value}</span>
         )}
       </dd>
     </div>
@@ -281,23 +272,9 @@ export function CaseStudyPage({ study }: Props) {
           </div>
         </section>
 
-        {/* Specs + Brief — fixed 350px specs rail on desktop */}
+        {/* Brief on the left, stacked specs on the right */}
         <section className="border-b border-border">
-          <div className="mx-auto flex max-w-[1400px] flex-col gap-12 px-6 py-16 md:flex-row md:gap-10 md:px-10 md:py-24">
-            <aside className="md:w-[350px] md:min-w-[350px] md:max-w-[350px] md:shrink-0">
-              <div className="sticky top-36 border border-border lg:top-40">
-                <div className="border-b border-border px-5 py-3 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                  System Specs
-                </div>
-                <dl className="divide-y divide-border hyphens-none [overflow-wrap:normal]">
-                  {study.specs.map((s, i) => (
-                    <SpecTableRow key={`${s.label}-${i}`} spec={s} />
-                  ))}
-                </dl>
-              </div>
-            </aside>
-
-            {/* Brief (MDX body) */}
+          <div className="mx-auto flex max-w-[1400px] flex-col gap-12 px-6 py-16 md:flex-row md:items-start md:gap-16 md:px-10 md:py-24">
             <div className="min-w-0 flex-1">
               <div className="border-b border-border pb-4">
                 <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
@@ -308,10 +285,23 @@ export function CaseStudyPage({ study }: Props) {
                 </h2>
               </div>
 
-              <div className="mx-auto mt-8 max-w-[600px] space-y-6 overflow-visible break-normal hyphens-none [overflow-wrap:normal] [&_h2+ul]:mt-4 [&_h2+ul]:space-y-2 [&_h2+ul]:border-l [&_h2+ul]:border-border [&_h2+ul]:pl-4 [&_h2+ul_li]:font-mono [&_h2+ul_li]:text-[11px] [&_h2+ul_li]:uppercase [&_h2+ul_li]:tracking-[0.14em] [&_h2+ul_li]:text-muted-foreground [&_p:first-of-type]:font-display [&_p:first-of-type]:text-2xl [&_p:first-of-type]:font-light [&_p:first-of-type]:leading-snug [&_p:first-of-type]:tracking-tight [&_p:first-of-type]:md:text-3xl [&_p:not(:first-of-type)]:text-base [&_p:not(:first-of-type)]:leading-relaxed [&_p:not(:first-of-type)]:text-muted-foreground">
+              <div className="mt-8 max-w-[600px] space-y-6 overflow-visible break-normal hyphens-none [overflow-wrap:normal] [&_h2+ul]:mt-4 [&_h2+ul]:space-y-2 [&_h2+ul]:border-l [&_h2+ul]:border-border [&_h2+ul]:pl-4 [&_h2+ul_li]:font-mono [&_h2+ul_li]:text-[11px] [&_h2+ul_li]:uppercase [&_h2+ul_li]:tracking-[0.14em] [&_h2+ul_li]:text-muted-foreground [&_p:first-of-type]:font-display [&_p:first-of-type]:text-2xl [&_p:first-of-type]:font-light [&_p:first-of-type]:leading-snug [&_p:first-of-type]:tracking-tight [&_p:first-of-type]:md:text-3xl [&_p:not(:first-of-type)]:text-base [&_p:not(:first-of-type)]:leading-relaxed [&_p:not(:first-of-type)]:text-muted-foreground">
                 <MDXContent code={study.mdx} components={projectMdxComponents} />
               </div>
             </div>
+
+            <aside className="md:w-[220px] md:min-w-[220px] md:max-w-[220px] md:shrink-0">
+              <div className="sticky top-36 border border-border lg:top-40">
+                <div className="border-b border-border px-4 py-3 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                  System Specs
+                </div>
+                <dl className="divide-y divide-border hyphens-none [overflow-wrap:normal]">
+                  {study.specs.map((s, i) => (
+                    <SpecTableRow key={`${s.label}-${i}`} spec={s} />
+                  ))}
+                </dl>
+              </div>
+            </aside>
           </div>
         </section>
 
@@ -333,7 +323,9 @@ export function CaseStudyPage({ study }: Props) {
             </header>
 
             <div className="space-y-px bg-border">
-              {study.blocks.map((b, i) => (
+              {study.blocks.map((b, i) => {
+                const caption = shouldShowBlockCaption(b.caption) ? splitBlockCaption(b.caption) : null;
+                return (
                 <article key={b.title} className="bg-card">
                   <div className="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-3 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
                     <span className="col-span-2 md:col-span-1">
@@ -428,15 +420,28 @@ export function CaseStudyPage({ study }: Props) {
                     </div>
                   )}
 
-                  {shouldShowBlockCaption(b.caption) ? (
+                  {caption ? (
                     <div className="px-5 py-5 md:px-8 md:py-6">
-                      <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
-                        {b.caption}
-                      </p>
+                      {caption.heading ? (
+                        <h3 className="max-w-2xl font-display text-xl font-light tracking-tight text-foreground md:text-2xl">
+                          {caption.heading}
+                        </h3>
+                      ) : null}
+                      {caption.body ? (
+                        <p
+                          className={cn(
+                            "max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base",
+                            caption.heading && "mt-3",
+                          )}
+                        >
+                          {caption.body}
+                        </p>
+                      ) : null}
                     </div>
                   ) : null}
                 </article>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>

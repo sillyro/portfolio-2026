@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, Outlet, useNavigate, useParams, useRouterState } from "@tanstack/react-router";
 import { allProjects } from "content-collections";
 import { PortfolioShellProvider, usePortfolioShell } from "@/components/site/portfolioShellContext";
@@ -18,6 +18,15 @@ const CATEGORY_LABEL: Record<ProjectCategory, string> = {
 
 const navLinkHover =
   "transition-colors hover:text-[var(--signal)] hover:border-[color-mix(in_oklab,var(--signal)_45%,var(--border))]";
+
+function isCaseStudyPath(pathname: string) {
+  return pathname.startsWith("/work/") && pathname !== "/work/";
+}
+
+function resetPortfolioScroll(pane: HTMLElement | null) {
+  if (pane) pane.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
 
 function ProjectNav({
   grouped,
@@ -181,6 +190,12 @@ function ShellLayoutInner() {
     navigate({ to: "/" });
   };
 
+  useLayoutEffect(() => {
+    if (prevPathRef.current !== null && prevPathRef.current !== pathname && isCaseStudyPath(pathname)) {
+      resetPortfolioScroll(mainScrollRef.current);
+    }
+  }, [pathname, mainScrollRef]);
+
   useEffect(() => {
     if (pathname !== "/") {
       setHomeSpiedSlug(null);
@@ -191,6 +206,8 @@ function ShellLayoutInner() {
 
       if (pathname === "/" && pendingCategory) {
         requestAnimationFrame(() => scrollToHomeCategory(pendingCategory, "instant"));
+      } else if (isCaseStudyPath(pathname)) {
+        resetPortfolioScroll(mainScrollRef.current);
       } else {
         scrollMainToTop("instant");
       }
@@ -198,6 +215,7 @@ function ShellLayoutInner() {
     prevPathRef.current = pathname;
   }, [
     pathname,
+    mainScrollRef,
     scrollMainToTop,
     scrollToHomeCategory,
     takePendingHomeCategoryScroll,
@@ -256,7 +274,8 @@ function ShellLayoutInner() {
 
       <div
         ref={mainScrollRef}
-        className="relative z-10 ml-0 min-h-dvh w-full overflow-y-auto pb-24 md:ml-[28%] md:h-dvh md:w-[72%] md:pb-0"
+        data-scroll-restoration-id="portfolio-main"
+        className="relative z-10 ml-0 min-h-dvh w-full overflow-y-auto pb-24 [overflow-anchor:none] md:ml-[28%] md:h-dvh md:w-[72%] md:pb-0"
       >
         <Outlet />
       </div>
